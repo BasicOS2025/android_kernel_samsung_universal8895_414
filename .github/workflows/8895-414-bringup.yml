@@ -1,10 +1,10 @@
-name: Exynos 8895 Linux 4.14 bring-up
+name: Exynos 8895 Linux 4.14 camera port probe
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  kernel:
+  camera:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
@@ -13,23 +13,21 @@ jobs:
         run: |
           sudo timeout 300 apt-get update -qq
           sudo timeout 300 apt-get install -y bc bison flex libssl-dev libelf-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
-      - name: Build Image and board DTBs
+      - name: Compile Exynos8895 FIMC-IS2
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p artifacts
           git rev-parse HEAD > artifacts/source-commit.txt
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- exynos8895_android17_defconfig 2>&1 | tee artifacts/config.log
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- exynos8895_camera_414_defconfig 2>&1 | tee artifacts/config.log
           cp out/.config artifacts/kernel.config
-          python3 scripts/8895-check-android-config.py out/.config | tee artifacts/config-checks.json
-          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- HOSTCFLAGS='-O2 -fcommon' KCFLAGS='-Wno-error' -j2 Image dtbs 2>&1 | tee artifacts/build.log
-          cp out/arch/arm64/boot/Image artifacts/
-          find out/arch/arm64/boot/dts/exynos -name 'exynos8895-*eur_open*.dtb' -exec cp {} artifacts/ \;
-          sha256sum artifacts/Image artifacts/*.dtb > artifacts/SHA256SUMS
+          grep -q '^CONFIG_VIDEO_EXYNOS_FIMC_IS2=y$' out/.config
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- HOSTCFLAGS='-O2 -fcommon' prepare scripts 2>&1 | tee artifacts/prepare.log
+          make O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- HOSTCFLAGS='-O2 -fcommon' KCFLAGS='-Wno-error' -k -j2 drivers/media/platform/exynos/fimc-is2/ 2>&1 | tee artifacts/build.log
       - name: Preserve build evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: exynos8895-4.14-bringup
+          name: exynos8895-4.14-camera-probe
           path: artifacts/
           retention-days: 14
