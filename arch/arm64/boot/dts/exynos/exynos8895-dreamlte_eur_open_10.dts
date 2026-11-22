@@ -28,6 +28,15 @@
 	model_info-hw_rev_end = <255>;
 	compatible = "samsung, DREAMLTE EUR rev06", "samsung,EXYNOS8895";
 
+	reserved-memory {
+		ramoops@92000000 {
+			compatible = "ramoops";
+			reg = <0x0 0x92000000 0x8000>;
+			record-size = <0x4000>;
+			console-size = <0x4000>;
+		};
+	};
+
 	spi_3: spi@10460000 {
 		status = "okay";
 		cs47l93: cs47l93@0 {
