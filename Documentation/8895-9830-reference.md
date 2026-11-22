@@ -28,3 +28,23 @@ Still required: real 8895 display/GPU/audio/camera/modem/Wi-Fi integration,
 UFS mounting, matching vendor userspace, and physical boot/subsystem tests.
 The original 4.4 ROM currently reboots from the Samsung logo into TWRP;
 the user reported empty crash logs, so its root cause is unproven.
+
+## BPF object metadata
+
+The 4.14 kernel now accepts the upstream 4.15 map and program name fields
+in BPF_MAP_CREATE and BPF_PROG_LOAD. BPF_OBJ_GET_INFO_BY_FD reports the
+names and the corresponding program metadata. Clients using the original
+4.14 argument and info structure sizes continue to work.
+
+Upstream commits `cb4d2b3f03d8`, `ad5b177bd73f` and `473d97343f94`
+define the ABI and name validation. Run the BPF selftest `test_obj_name` on
+a booted test kernel to check named and legacy objects and rejection of
+invalid or unterminated names.
+
+The Android 17 and LineageOS 24.0 network loaders use these name fields
+when their kernel version check is at least 4.15. Their later platform
+version checks and BPF features, including BTF, still apply. This backport
+leaves the reported kernel version at 4.14.113.
+
+- [AOSP Android 17 NetBpfLoad](https://android.googlesource.com/platform/packages/modules/Connectivity/+/347fbd34b368d19f0d87e908ea101eed3601a731/bpf/loader/NetBpfLoad.cpp)
+- [LineageOS 24.0 NetBpfLoad](https://github.com/LineageOS/android_packages_modules_Connectivity/blob/7c04d866538e6f689823b769fb5c1e614ca0e295/bpf/loader/NetBpfLoad.cpp)
