@@ -48,3 +48,16 @@ leaves the reported kernel version at 4.14.113.
 
 - [AOSP Android 17 NetBpfLoad](https://android.googlesource.com/platform/packages/modules/Connectivity/+/347fbd34b368d19f0d87e908ea101eed3601a731/bpf/loader/NetBpfLoad.cpp)
 - [LineageOS 24.0 NetBpfLoad](https://github.com/LineageOS/android_packages_modules_Connectivity/blob/7c04d866538e6f689823b769fb5c1e614ca0e295/bpf/loader/NetBpfLoad.cpp)
+
+## Cgroup socket creation
+
+The Android network loader sets `expected_attach_type` when loading its
+socket-creation filter. This 4.14 tree accepts `BPF_CGROUP_INET_SOCK_CREATE`
+with `BPF_PROG_TYPE_CGROUP_SOCK` at the upstream ABI offset. A zero value
+continues to support old callers. Other nonzero attach types and a nonzero
+`prog_ifindex` are rejected because this backport only covers the existing
+socket-creation hook and the tree has no BPF device-offload implementation.
+
+The `test_sock_create` BPF selftest covers both load formats and rejected
+attributes. Newer cgroup socket hooks, including bind hooks, are separate
+kernel features. The Android loader's kernel version checks still apply.

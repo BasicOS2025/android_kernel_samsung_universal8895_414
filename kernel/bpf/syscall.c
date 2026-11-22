@@ -1088,7 +1088,7 @@ struct bpf_prog *bpf_prog_get_type(u32 ufd, enum bpf_prog_type type)
 EXPORT_SYMBOL_GPL(bpf_prog_get_type);
 
 /* last field in 'union bpf_attr' used by this command */
-#define	BPF_PROG_LOAD_LAST_FIELD prog_name
+#define	BPF_PROG_LOAD_LAST_FIELD expected_attach_type
 
 static int bpf_prog_load(union bpf_attr *attr)
 {
@@ -1098,7 +1098,15 @@ static int bpf_prog_load(union bpf_attr *attr)
 	char license[128];
 	bool is_gpl;
 
-	if (CHECK_ATTR(BPF_PROG_LOAD))
+	if (CHECK_ATTR(BPF_PROG_LOAD) || attr->prog_ifindex)
+		return -EINVAL;
+
+	/* The only cgroup socket hook on this tree is socket creation.
+	 * Keep zero valid for callers that predate expected_attach_type.
+	 */
+	if (attr->expected_attach_type &&
+	    (type != BPF_PROG_TYPE_CGROUP_SOCK ||
+	     attr->expected_attach_type != BPF_CGROUP_INET_SOCK_CREATE))
 		return -EINVAL;
 
 	if (attr->prog_flags & ~BPF_F_STRICT_ALIGNMENT)
